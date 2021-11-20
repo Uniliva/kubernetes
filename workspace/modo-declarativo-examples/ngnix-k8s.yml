@@ -1,0 +1,10 @@
+apiVersion: v1 # define a versão da api do kubernetes
+kind: Pod # define o tipo de recurso criado
+metadata: # Meta dados que podesm ser adicionado ao pod
+  name: uni-pod # nome do pod
+spec: # epecificação do pod
+  containers: # containers que compoe o pod
+    - name: uni-nginx-container # nome do container
+      image: nginx:latest # imagem usada para criar o container
+    - name: uni-http-container
+      image: httpd:latest
