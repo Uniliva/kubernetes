@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: portal-noticias-replicaset
+spec:
+  template: # template a ser usado pelo replicaset
+    metadata:
+      name: portal-noticias
+      labels: 
+        app: portal-noticias # label usada para identificar os pods
+    spec:
+      containers:
+        - name: portal-noticias-container
+          image: aluracursos/portal-noticias:1
+          ports:
+            - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: portal-configmap
+  replicas: 3 # numeros de replicas que deve existir
+  selector: # serve pra dizer o kubernetes que ele deve gerenciar os pods com essa label
+    matchLabels:
+      app: portal-noticias 

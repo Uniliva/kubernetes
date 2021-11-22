@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-pod  # deve ser igual ao labels do metadata do template
+  template:
+    metadata:
+      labels:
+        app: nginx-pod 
+    spec:
+      containers:
+      - name: nginx-container
+        image: nginx:stable
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 80

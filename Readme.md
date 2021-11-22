@@ -504,3 +504,194 @@ spec:
 ex: 
 
 ![image-20211120111517650](.images/image-20211120111517650.png)
+
+
+
+---
+
+# Recursos do kubernetes
+
+> Arquivos de exemplo dentro da pasta workspace/projeto-avançado
+
+- Tipos de recuros que vamos ver:
+
+> - ReplicasSets
+> - Deployments
+
+
+
+----
+
+## ReplicaSet
+
+![image-20211122060546098](.images/image-20211122060546098.png)
+
+> Estrutura que pode encapsular um ou mais pods, usada quando se quer manter alta disponibilidade, pois se um pod cair o replicaSet sobe outro automaticamente.
+
+```yaml
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: portal-noticias-replicaset
+spec:
+  template: # template a ser usado pelo replicaset
+    metadata:
+      name: portal-noticias
+      labels: 
+        app: portal-noticias # label usada para identificar os pods
+    spec:
+      containers:
+        - name: portal-noticias-container
+          image: aluracursos/portal-noticias:1
+          ports:
+            - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: portal-configmap
+  replicas: 3 # numeros de replicas que deve existir
+  selector: # serve pra dizer o kubernetes que ele deve gerenciar os pods com essa label
+    matchLabels:
+      app: portal-noticias 
+```
+
+- Como definidos tres replicas, ao se verificar os pods veremos:
+
+![image-20211122055649330](.images/image-20211122055649330.png)
+
+> caso delete algum pod do replicaSet ele automaticamente recriará um novo.
+
+- Para ver os replicasSets criado os o comando:
+
+```shell
+kubectl get replicasset
+kubectl get rs
+# ou se quiser mais detalhes
+kubectl describe replicaset <nome>
+kubectl describe rs <nome>
+```
+
+
+
+---
+
+## Deployments
+
+![image-20211122060612288](.images/image-20211122060612288.png)
+
+
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-pod  # deve ser igual ao labels do metadata do template
+  template:
+    metadata:
+      labels:
+        app: nginx-pod 
+    spec:
+      containers:
+      - name: nginx-container
+        image: nginx:stable
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 80
+```
+
+
+
+- Ao executar, será criado um replicaset com tres pods, semelhante ao visto anteriores:
+
+```shell
+kubectl apply -f <nome-arquivo>	
+```
+
+ex:
+
+![image-20211122061513408](.images/image-20211122061513408.png)
+
+- Para listar e ver detalhes do deplyment use:
+
+```shell
+kubectl get deployments
+# ou, caso queira mais detalhes use
+kubectl describe deployments <nome>
+```
+
+
+
+> A diferencia que o deployment, permite adicionar outros recurso em um só arquivo, alem de ter uns comandos para controle de versionamento.
+
+
+
+### Comandos
+
+```shell
+# Aplicar deployment
+kubectl apply -f <nome-arquivo>	
+
+# Deletar deployment (deleta todos o recursos atrelados)
+kubectl delete deployment <nome do deployment>
+kubectl delete -f <nome-arquivo->
+# ou 
+
+# Ver deployments
+kubectl get deployments
+
+# ou, caso queira mais detalhes use
+kubectl describe deployments <nome>
+
+# ver historico
+kubectl rollout history deployment <nome-do-deployment>
+
+# voltar pra uma versão
+kubectl rollout undo deployment <nome-do-deploy> --to-revision=2
+```
+
+
+
+### Historico de versões
+
+> - Historico de alterações - mostra o historico de alerações
+>
+> ```shell
+> kubectl rollout history deployment <nome-do-deployment>
+> ```
+>
+> ![image-20211122063059510](.images/image-20211122063059510.png)
+>
+> **obs:** Deve ser passadoa  flag --record no final do comando de **apply**
+>
+> ```shell
+> kubectl apply -f <arquivo-deployment> --record
+> ```
+>
+> ![image-20211122063130716](.images/image-20211122063130716.png)
+>
+> - Altera mensagem de alteração
+>
+> Quando fazemos o passo anterior, e vemos o historico, so vemos a linha do deplyment onde ouver a alteração, caso queiramos adicionar uma mensagem, mais amigavel, podemos após o **apply** dar o comando abaixo:
+>
+> ```shell
+> kubectl annotate deployment <nome-do-deploy> kubernetes.io/change-cause="Messagem que equeremos"
+> ```
+>
+> ### ![image-20211122063143936](.images/image-20211122063143936.png)
+
+### Voltando uma versão (rollback)
+
+>Realizando o passo anterior podemos voltar versões, (fazer um rollback) com o comando:
+>
+>```shell
+>kubectl rollout undo deployment <nome-do-deploy> --to-revision=2
+>```
+>
+>
