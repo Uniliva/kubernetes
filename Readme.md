@@ -132,6 +132,9 @@ kubectl delete pods --all
 # Entra no container com o modo interativo
 kubectl exec -it <pod> -- bash
 
+# Entra no container caso tenha mais de um no pod
+kubectl exec -it <pod> --container <container-name> -- bash
+
 # Para sair do container em uso
 crtl + D
 ```
@@ -515,14 +518,26 @@ ex:
 
 - Tipos de recuros que vamos ver:
 
-> - ReplicasSets
-> - Deployments
+> - recursos de disponibilidade 
+>   - ReplicasSets
+>   - Deployments
+> - recursos de armazenamento
+>   -  Volumes
+>   - Persistents Volumes
+>   - Persistent Volume Claim
+>   - Storage Classes
 
 
 
 ----
 
-## ReplicaSet
+## Recursos de disponibilidade
+
+---
+
+![img](.images/1KtnpIx1twobr16FP7hvAUg.png)
+
+### ReplicaSet
 
 ![image-20211122060546098](.images/image-20211122060546098.png)
 
@@ -574,7 +589,7 @@ kubectl describe rs <nome>
 
 ---
 
-## Deployments
+### Deployments
 
 ![image-20211122060612288](.images/image-20211122060612288.png)
 
@@ -632,7 +647,7 @@ kubectl describe deployments <nome>
 
 
 
-### Comandos
+#### Comandos
 
 ```shell
 # Aplicar deployment
@@ -658,7 +673,20 @@ kubectl rollout undo deployment <nome-do-deploy> --to-revision=2
 
 
 
-### Historico de versões
+> Dica linux - crie alias
+>
+> ```shell
+> alias kubectl="minikube kubectl --"
+> alias k="minikube kubectl --"
+> funtion k-dploy-msg(){
+> 	echo "Adicionando ao deployment $1 a anotação : $2"
+> 	kubectl annotate deployment $1 kubernetes.io/change-cause=$2
+> }
+> 
+> alias k-hd="kubectl rollout history deployment "
+> ```
+
+#### Historico de versões
 
 > - Historico de alterações - mostra o historico de alerações
 >
@@ -686,7 +714,7 @@ kubectl rollout undo deployment <nome-do-deploy> --to-revision=2
 >
 > ### ![image-20211122063143936](.images/image-20211122063143936.png)
 
-### Voltando uma versão (rollback)
+#### Voltando uma versão (rollback)
 
 >Realizando o passo anterior podemos voltar versões, (fazer um rollback) com o comando:
 >
@@ -694,4 +722,203 @@ kubectl rollout undo deployment <nome-do-deploy> --to-revision=2
 >kubectl rollout undo deployment <nome-do-deploy> --to-revision=2
 >```
 >
+
+
+
+---
+
+## Recursos de armazenamentos
+
+
+
+link: https://kubernetes.io/docs/concepts/storage/volumes/
+
+#### Volumes
+
+> Semelhante aos volumes do docker, caso o container morrar os dados ficam armazenados no volume, a diferença aqui e que o ciclo de vida do volume no kubernetes dica atrelado a vida do pod, caso o pod tenha 2 container se um morrer, e for recriado, os dados ainda estaram lá, poré se o pod for distruido, os volumes serão perdidos.
+
+ex:
+
+```yaml
+apiVersion: apps/v1
+kind: Pod
+metadata:
+    name: pod-volume
+spec:
+    containers:
+      - name: nginx-container
+        image: nginx:latest
+        volumeMounts:
+            - mountPath: /volume-dentro-do-container
+              name: segundo-volume
+      - name: jenkins
+        image: jenkins/jenkins:alpine
+        volumeMounts:
+          - mountPath: /volume-dentro-do-container
+            name: segundo-volume
+    volumes:
+    - name: segundo-volume
+      hostPath:
+        path: /tmp/bkp
+        type: DirectoryOrCreate
+```
+
+
+
+> o **type** do volume pode ser:
 >
+> - Directory - Quando o diretorio já estiver criado.
+> - DirectoryOrCreate - Quando o diretorio não existir, o kubernets cria.
+
+
+
+> Para executar isso localmente no linux, você estará usando o minikube, que é um container docker que roda o kubernetes, por isso é necessario criar a pasta do mapeamento do volume  (caso esteja usando o **type** do volume como **directory**) dentro do minikube , NÃO em sua maquina, para isso use os comandos abaixo:
+>
+> ```shell
+> # logar no minikube
+> minikube ssh
+> 
+> # criar a pasta
+> cd /tmp
+> mkdir bkp
+> 
+> # Sair do minikuve
+> crtl+d	
+> ```
+
+
+
+---
+
+#### Persistents Volumes
+
+![image-20211123062417716](.images/image-20211123062417716.png)
+
+
+
+> A ideia de PV (persistence volume) é usar o mesmo conceito anterior, porem na nuvem, onde se criaria um volume e se linkaria esse volume com o pod, para isso é necessario criar um pv, que vai armazenar a conexão do volume criado na nuvem para ser usado no kubernetes
+>
+> - Um PV é uma instância de armazenamento virtual que é incluída como um volume no cluster. O PV aponta para um dispositivo de armazenamento físico em sua conta na nuvem e resume a API que é usada para se comunicar com o dispositivo de armazenamento. Para montar um PV em um app, deve-se ter um PVC correspondente. Os PVs montados aparecem como uma pasta dentro do sistema de arquivos do contêiner.
+
+
+
+- Criando um PV no google cloud
+
+```yaml
+apiVersion: v1
+kind: PersistVolume
+metadata:
+    name: pv-1
+spec:
+    capacity:
+        storage: 10Gi
+    accessModes:
+        - ReadWriteOnce
+    gcePersistentDisk:
+        pdName: pv-disk
+    storageClassName: standard
+```
+
+
+
+- Tipos de volumes persistentes
+
+>Tipos de PersistentVolume são implementados como plugins. Atualmente o Kubernetes suporta os plugins abaixo:
+>
+>- [`awsElasticBlockStore`](https://kubernetes.io/docs/concepts/storage/volumes/#awselasticblockstore) - AWS Elastic Block Store (EBS)
+>- [`azureDisk`](https://kubernetes.io/docs/concepts/storage/volumes/#azuredisk) - Azure Disk
+>- [`azureFile`](https://kubernetes.io/docs/concepts/storage/volumes/#azurefile) - Azure File
+>- [`cephfs`](https://kubernetes.io/docs/concepts/storage/volumes/#cephfs) - CephFS volume
+>- [`cinder`](https://kubernetes.io/docs/concepts/storage/volumes/#cinder) - Cinder (OpenStack block storage) (**depreciado**)
+>- [`csi`](https://kubernetes.io/docs/concepts/storage/volumes/#csi) - Container Storage Interface (CSI)
+>- [`fc`](https://kubernetes.io/docs/concepts/storage/volumes/#fc) - Fibre Channel (FC) storage
+>- [`flexVolume`](https://kubernetes.io/docs/concepts/storage/volumes/#flexVolume) - FlexVolume
+>- [`flocker`](https://kubernetes.io/docs/concepts/storage/volumes/#flocker) - Flocker storage
+>- [`gcePersistentDisk`](https://kubernetes.io/docs/concepts/storage/volumes/#gcepersistentdisk) - GCE Persistent Disk
+>- [`glusterfs`](https://kubernetes.io/docs/concepts/storage/volumes/#glusterfs) - Glusterfs volume
+>- [`hostPath`](https://kubernetes.io/docs/concepts/storage/volumes/#hostpath) - HostPath volume (somente para teste de nó único; ISSO NÃO FUNCIONARÁ num cluster multi-nós; ao invés disso, considere a utilização de volume `local`.)
+>- [`iscsi`](https://kubernetes.io/docs/concepts/storage/volumes/#iscsi) - iSCSI (SCSI over IP) storage
+>- [`local`](https://kubernetes.io/docs/concepts/storage/volumes/#local) - storage local montados nos nós.
+>- [`nfs`](https://kubernetes.io/docs/concepts/storage/volumes/#nfs) - Network File System (NFS) storage
+>- `photonPersistentDisk` - Controlador Photon para disco persistente. (Esse tipo de volume não funciona mais desde a removação do provedor de cloud correspondente.)
+>- [`portworxVolume`](https://kubernetes.io/docs/concepts/storage/volumes/#portworxvolume) - Volume Portworx
+>- [`quobyte`](https://kubernetes.io/docs/concepts/storage/volumes/#quobyte) - Volume Quobyte
+>- [`rbd`](https://kubernetes.io/docs/concepts/storage/volumes/#rbd) - Volume Rados Block Device (RBD)
+>- [`scaleIO`](https://kubernetes.io/docs/concepts/storage/volumes/#scaleio) - Volume ScaleIO (**depreciado**)
+>- [`storageos`](https://kubernetes.io/docs/concepts/storage/volumes/#storageos) - Volume StorageOS
+>- [`vsphereVolume`](https://kubernetes.io/docs/concepts/storage/volumes/#vspherevolume) - Volume vSphere VMDK
+
+
+
+- Modos de acessos
+
+> Os modos de acesso são:
+>
+> - ReadWriteOnce -- o volume pode ser montado como leitura-escrita por um nó único
+> - ReadOnlyMany -- o volume pode ser montado como somente-leitura por vários nós
+> - ReadWriteMany -- o volume pode ser montado como leitura-escrita por vários nós
+>
+> Na linha de comando, os modos de acesso ficam abreviados:
+>
+> - RWO - ReadWriteOnce
+> - ROX - ReadOnlyMany
+> - RWX - ReadWriteMany
+
+- Para usar o PV é necessario configurar uma claim para dara acessos ao containers
+
+##### Persistent Volume Claim
+
+![image-20211123063855580](.images/image-20211123063855580.png)
+
+> Uma PVC é a solicitação para provisionar armazenamento persistente com um tipo e configuração específicos. Para especificar o tipo de armazenamento persistente que você deseja
+
+
+
+- Criando um PVC no google cloud
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: pvc-1
+spec:
+    accessModes:
+        - ReadWriteOnde
+    resources:
+        requests:
+            storage: 10Gi
+    storageClassName: standard
+```
+
+
+
+> para linkar um **pvc** a **pv**, como **pvc** e uma "requisição de armazenamento" usa-se as especificações, ou seja, as especificações do volume contidos no **pvc** devem ser igual ao contido no **pv**.
+
+
+
+- Criando um pod que aponta para um pvc
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+    name: pod-pv
+spec:
+    containers:
+        - name: nginx-container
+            image: nginx-latest
+            volumeMounts:
+                - mountPath: /volume-dentro-do-container
+                name: primeiro-pv
+    volumes:
+        - name: primeiro-pv
+            hostPath:
+                persistentVolumeClaim:
+                    claimName: pvc-1
+```
+
+
+
+---
+
+#### Storage Classes
