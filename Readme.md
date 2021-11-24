@@ -733,7 +733,7 @@ kubectl rollout undo deployment <nome-do-deploy> --to-revision=2
 
 link: https://kubernetes.io/docs/concepts/storage/volumes/
 
-#### Volumes
+### Volumes
 
 > Semelhante aos volumes do docker, caso o container morrar os dados ficam armazenados no volume, a diferença aqui e que o ciclo de vida do volume no kubernetes dica atrelado a vida do pod, caso o pod tenha 2 container se um morrer, e for recriado, os dados ainda estaram lá, poré se o pod for distruido, os volumes serão perdidos.
 
@@ -790,7 +790,7 @@ spec:
 
 ---
 
-#### Persistents Volumes
+### Persistents Volumes
 
 ![image-20211123062417716](.images/image-20211123062417716.png)
 
@@ -799,6 +799,23 @@ spec:
 > A ideia de PV (persistence volume) é usar o mesmo conceito anterior, porem na nuvem, onde se criaria um volume e se linkaria esse volume com o pod, para isso é necessario criar um pv, que vai armazenar a conexão do volume criado na nuvem para ser usado no kubernetes
 >
 > - Um PV é uma instância de armazenamento virtual que é incluída como um volume no cluster. O PV aponta para um dispositivo de armazenamento físico em sua conta na nuvem e resume a API que é usada para se comunicar com o dispositivo de armazenamento. Para montar um PV em um app, deve-se ter um PVC correspondente. Os PVs montados aparecem como uma pasta dentro do sistema de arquivos do contêiner.
+
+
+
+#### Comandos
+
+```shell
+# listando storage class existentes
+kubectl get storageclass
+#ou
+kubectl get sc
+
+# listar persistence volumes claim
+kubectl get pvc
+
+#listar persistence volume
+kubectl get pv
+```
 
 
 
@@ -921,4 +938,202 @@ spec:
 
 ---
 
-#### Storage Classes
+### Storage Classes
+
+![image-20211124053008318](.images/image-20211124053008318.png)
+
+> A diferença da item anteriror e que com um storage classes a criação do disco na nuvem e do persistente volume é feita automaticamente.
+
+
+
+- Criando um storage class (sc) no google cloud
+
+```yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+    name: nome-sc
+provisioner: kubernetes.io/gce-pd
+parameters:
+    type: pd-standard
+    fstype: ext4
+    replication-type: none
+```
+
+
+
+- Atrelando um storage class no PVC
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: pvc-2
+spec:
+    accessModes:
+        - ReadWriteOnde
+    resources:
+        requests:
+            storage: 10Gi
+    storageClassName: nome-sc
+```
+
+- Criando um pod
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+    name: pod-pv
+spec:
+    containers:
+        - name: nginx-container
+            image: nginx-latest
+            volumeMounts:
+                - mountPath: /volume-dentro-do-container
+                name: primeiro-pv
+    volumes:
+        - name: primeiro-pv
+            hostPath:
+                persistentVolumeClaim:
+                    claimName: pvc-2
+```
+
+
+
+#### Comandos
+
+```shell
+# listando storage class existentes
+kubectl get storageclass
+#ou
+kubectl get sc
+
+# listar persistence volumes claim
+kubectl get pvc
+
+#listar persistence volume
+kubectl get pv
+```
+
+
+
+---
+
+### Stateful Set
+
+
+
+![StatefulSet | Kubernetes Engine Documentation | Google Cloud](.images/statefulset.png)
+
+> Bem similar a um Deployment, mas, ele é voltado para aplicações a Pods que devem manter o seu estado que eles são Stateful. Isso significa que quando um Pod reinicia ou falha por algum motivo dentro de um Stateful Set e volta a execução, o arquivo é mantido.
+
+
+
+- Criando pods usando o statefull set ao invéz de deployments
+
+```yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: systema-noticias-statefull-set
+spec:
+  serviceName: svc-sistema-noticias
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sistema-noticias
+  template:
+    metadata:
+      labels:
+        app: sistema-noticias
+      name: sistema-noticias
+    spec:
+      containers:
+      - name: sistema-noticias-container
+        image: aluracursos/sistema-noticias:1
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 80
+        envFrom:
+          - configMapRef:
+              name: sistema-configmap
+        volumeMounts:
+          - name: vl-imagem
+            mountPath: "/var/www/uploads"
+          - name: vl-sessao
+            mountPath: /tmp
+      volumes:
+        - name: vl-imagem
+          persistentVolumeClaim:
+            claimName: imagem-pvc
+        - name: vl-sessao
+          persistentVolumeClaim:
+            claimName: sessao-pvc
+```
+
+
+
+> vai criar a estrutura e vai manter os dados salvos no volumes atachados, use os comandos:
+>
+> ```shell
+> # Para aplicar
+> kubectl apply -f <nome-file>
+> ```
+>
+> 
+
+
+
+- Lembrando que para isso antes é necessario criar os pvc (volumes que serão usados)
+
+```yaml
+
+# imagem-pvc.yml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: imagem-pvc
+spec:
+  resources:
+    requests:
+      storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+
+# sessao-pvc.yml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sessao-pvc
+spec:
+  resources:
+    requests:
+      storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+```
+
+
+
+> Salve em arquivos com os determinados nomes e de o comando abaixo
+
+```shell
+# para aplicar
+kubectl apply -f <nome>
+
+# para ver os pvcs criados
+kubectl get pvc
+
+# para ver os pvs criados
+kubectl get pv
+
+# para ver o storage classe existente
+kubectl get sc
+```
+
