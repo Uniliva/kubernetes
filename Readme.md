@@ -1020,7 +1020,7 @@ kubectl get pv
 
 ---
 
-### Stateful Set
+### Statefull Set
 
 
 
@@ -1137,3 +1137,65 @@ kubectl get pv
 kubectl get sc
 ```
 
+
+
+---
+
+## Recurso para healthcheck
+
+> o kubernetes consegue gerenciar por si proprio o pod, porem os container dentro ("a aplicação") ele precisa de ajuda pra gerenciar se esta vivo, par isso ele utiliza o **liveness e o readiness**.
+>
+> - O Kubernetes nem sempre tem como saber se a aplicação está saudável
+> - Podemos criar critérios para definir se a aplicação está saudável através de probes
+> - Como criar LivenessProbes com o campo `livenessProbe`
+> - LivenessProbes podem fazer a verificação em diferentes intervalos de tempo via HTTP
+> - Como criar ReadinessProbes com o campo `readinessProbe`
+> - ReadinessProbes podem fazer a verificação em diferentes intervalos de tempo via HTTP
+> - LivenessProbes são para saber se a aplicação está saudável e/ou se deve ser reiniciada, enquanto ReadinessProbes são para saber se a aplicação já está pronta para receber requisições depois de iniciar
+> - Além do HTTP, também podemos fazer verificações via TCP
+
+
+
+link: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+
+### Liveness Prob
+
+> Entenda como forma de checagem se o contanier tem uma boa saude, declaramos junto a declaração co container.
+
+```yaml
+livenessProbe:
+ httpGet:  # metodo que vamos usar
+  path: /  # path aonde vamos bater com a requisição
+  port: 80 # porta do container
+ periodSeconds: 10 # de quanto em quanto tempo vamos validar em segundos
+ failureThreshold: 3 # quandos erros vamos aceitar antes de reiniciar o container	
+ initialDelaySeconds: 20 # Delay inicial para que o container possa subir
+```
+
+ex:
+
+![image-20211126060259581](.images/image-20211126060259581.png)
+
+
+
+
+
+----
+
+### Readiness Probes
+
+> Entenda como a prova de que um container pode receber requisições, que que ele esta "Ready" (pronto) para começar a receber requisições.
+
+```yaml
+readinessProbe:
+  httpGet:  # metodo que vamos usar para validar se o caontainer esta pronto
+    path: /  # path aonde vamos bater com a requisição
+    port: 80 # porta do container
+  periodSeconds: 10 # de quanto em quanto tempo vamos validar em segundos
+  failureThreshold: 5 # quanto erros são tentativas são toleraveis aonte de começar a madar requisição para o container
+  initialDelaySeconds: 3 # Delay inicial após o container subir, para iniciar as validações se o container esta pronto
+```
+
+EX:
+
+![image-20211126061230975](.images/image-20211126061230975.png)

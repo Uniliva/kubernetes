@@ -24,3 +24,17 @@ spec:
         envFrom:
           - configMapRef:
               name: sistema-configmap
+        livenessProbe:
+          httpGet:  # metodo que vamos usar
+            path: /  # path aonde vamos bater com a requisição
+            port: 80 # porta do container
+          periodSeconds: 10 # de quanto em quanto tempo vamos validar em segundos
+          failureThreshold: 3 # quandos erros vamos aceitar antes de reiniciar o container
+          initialDelaySeconds: 20 # Delay inicial para que o container possa subir
+        readinessProbe:
+          httpGet:  # metodo que vamos usar para validar se o caontainer esta pronto
+            path: /  # path aonde vamos bater com a requisição
+            port: 80 # porta do container
+          periodSeconds: 10 # de quanto em quanto tempo vamos validar em segundos
+          failureThreshold: 5 # quanto erros são tentativas são toleraveis aonte de começar a madar requisição para o container
+          initialDelaySeconds: 3 # Delay inicial após o container subir, para iniciar as validações se o container esta pronto
