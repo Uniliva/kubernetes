@@ -1274,6 +1274,8 @@ kubectl get hpa
 
 > **Obs:** Apenas isso não sera necessario pra que funcione, é  necessario configurar um servidor de metricas vai garadar as metricas de consumo. para isso usamos o arquivo abaixo:
 >
+> - links: https://github.com/kubernetes-sigs/metrics-server
+>
 > ```yaml
 > ---
 > apiVersion: rbac.authorization.k8s.io/v1
