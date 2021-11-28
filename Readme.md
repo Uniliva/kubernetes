@@ -8,11 +8,11 @@
 
 ---
 
-# Entendendo
+## Entendendo
 
 ![image-20211118205347741](.images/image-20211118205347741.png)
 
-## Cluster 
+### Cluster 
 
 > Um cluster é composto por:
 
@@ -59,7 +59,7 @@
 
 ---
 
-# Rolando kubernets local
+## Rolando kubernets local
 
 > Para rodar o kubernets localmente, usamos o minikube, para baixa-lo acesse:
 >
@@ -67,7 +67,7 @@
 
 
 
-## Instalação no Linux
+### Instalação no Linux
 
 ```shell
 ## Minikube
@@ -94,7 +94,7 @@ minikube dashboard
 
 ---
 
-## Comandos uteis
+### Comandos uteis
 
 > Segue alguns comandos uteis usados 
 
@@ -149,11 +149,11 @@ crtl + D
 
 ---
 
-# Criando recurso de forma declarativa
+## Criando recurso de forma declarativa
 
 ---
 
-## Criando pods
+### Criando pods
 
 >  Para criar pods de forma declarativa, primerio crie um arquivo usando a extenção .yaml
 
@@ -197,7 +197,7 @@ kubctl delete -f <file>
 
 ---
 
-## Criando seviços (svc)
+### Criando seviços (svc)
 
 > São abstrações para expor aplicações executando em um ou mais pods, que podem prover ips's fixos para comunicação, alem de DNS e balanciamento de carga.
 
@@ -384,7 +384,7 @@ kubectl apply -f <nome-arquivo>
 
 ----
 
-## ConfigMap
+### ConfigMap
 
 > Permite extrair as configuração expecificas para tornar um pod generico e reutilizavel, com ele é possivel reutilizar configurações e varis pods
 
@@ -428,11 +428,11 @@ ex:
 
 ---
 
-### Importando o configMap  na definição de um pod
+#### Importando o configMap  na definição de um pod
 
 Há duas dorma de se fazer a importação
 
-#### Por variaveis
+##### Por variaveis
 
 > Mais verboso, e util quando se tem varios configMaps compartilhado
 
@@ -482,7 +482,7 @@ ex:
 
 
 
-#### Pelo arquivo completo
+##### Pelo arquivo completo
 
 > Menos verboso, usado quando o config map tem a maioria ou todas a variaveis (configurações) que o pod ira usar
 
@@ -518,7 +518,7 @@ ex:
 
 ---
 
-# Recursos do kubernetes
+## Recursos do kubernetes
 
 > Arquivos de exemplo dentro da pasta workspace/projeto-avançado
 
@@ -537,13 +537,13 @@ ex:
 
 ----
 
-## Recursos de disponibilidade
+### Recursos de disponibilidade
 
 ---
 
 ![img](.images/1KtnpIx1twobr16FP7hvAUg.png)
 
-### ReplicaSet
+#### ReplicaSet
 
 ![image-20211122060546098](.images/image-20211122060546098.png)
 
@@ -595,7 +595,7 @@ kubectl describe rs <nome>
 
 ---
 
-### Deployments
+#### Deployments
 
 ![image-20211122060612288](.images/image-20211122060612288.png)
 
@@ -653,7 +653,7 @@ kubectl describe deployments <nome>
 
 
 
-#### Comandos
+##### Comandos
 
 ```shell
 # Aplicar deployment
@@ -692,7 +692,7 @@ kubectl rollout undo deployment <nome-do-deploy> --to-revision=2
 > alias k-hd="kubectl rollout history deployment "
 > ```
 
-#### Historico de versões
+##### Historico de versões
 
 > - Historico de alterações - mostra o historico de alerações
 >
@@ -720,7 +720,7 @@ kubectl rollout undo deployment <nome-do-deploy> --to-revision=2
 >
 > ### ![image-20211122063143936](.images/image-20211122063143936.png)
 
-#### Voltando uma versão (rollback)
+##### Voltando uma versão (rollback)
 
 >Realizando o passo anterior podemos voltar versões, (fazer um rollback) com o comando:
 >
@@ -733,13 +733,13 @@ kubectl rollout undo deployment <nome-do-deploy> --to-revision=2
 
 ---
 
-## Recursos de armazenamentos
+### Recursos de armazenamentos
 
 
 
 link: https://kubernetes.io/docs/concepts/storage/volumes/
 
-### Volumes
+#### Volumes
 
 > Semelhante aos volumes do docker, caso o container morrar os dados ficam armazenados no volume, a diferença aqui e que o ciclo de vida do volume no kubernetes dica atrelado a vida do pod, caso o pod tenha 2 container se um morrer, e for recriado, os dados ainda estaram lá, poré se o pod for distruido, os volumes serão perdidos.
 
@@ -796,7 +796,7 @@ spec:
 
 ---
 
-### Persistents Volumes
+#### Persistents Volumes
 
 ![image-20211123062417716](.images/image-20211123062417716.png)
 
@@ -808,7 +808,7 @@ spec:
 
 
 
-#### Comandos
+##### Comandos
 
 ```shell
 # listando storage class existentes
@@ -944,7 +944,7 @@ spec:
 
 ---
 
-### Storage Classes
+#### Storage Classes
 
 ![image-20211124053008318](.images/image-20211124053008318.png)
 
@@ -1007,7 +1007,7 @@ spec:
 
 
 
-#### Comandos
+##### Comandos
 
 ```shell
 # listando storage class existentes
@@ -1026,7 +1026,7 @@ kubectl get pv
 
 ---
 
-### Statefull Set
+#### Statefull Set
 
 
 
@@ -1147,7 +1147,7 @@ kubectl get sc
 
 ---
 
-## Recurso para healthcheck
+### Recurso para healthcheck
 
 > o kubernetes consegue gerenciar por si proprio o pod, porem os container dentro ("a aplicação") ele precisa de ajuda pra gerenciar se esta vivo, par isso ele utiliza o **liveness e o readiness**.
 >
@@ -1164,7 +1164,7 @@ kubectl get sc
 
 link: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 
-### Liveness Prob
+#### Liveness Prob
 
 > Entenda como forma de checagem se o contanier tem uma boa saude, declaramos junto a declaração co container.
 
@@ -1188,7 +1188,7 @@ ex:
 
 ----
 
-### Readiness Probes
+#### Readiness Probes
 
 > Entenda como a prova de que um container pode receber requisições, que que ele esta "Ready" (pronto) para começar a receber requisições.
 
@@ -1212,7 +1212,7 @@ EX:
 
 ----
 
-## Recurso de escalabilidade
+### Recurso de escalabilidade
 
 > Permite escalara os pods deacordo com a demanda
 >
@@ -1220,7 +1220,7 @@ EX:
 
 
 
-### HPA - Horizontal Pod AutoScale
+#### HPA - Horizontal Pod AutoScale
 
 - Basea-se no uso de cpu para realizar o scalonamento. por isso precisamos informar em nossos **deployments** os definições de cpus usadas por aquele pod.
 
@@ -1263,7 +1263,7 @@ spec:
           averageUtilization: 20
 ```
 
-### Comandos
+#### Comandos
 
 ```yaml
 # listar configurações de HPA
@@ -1439,3 +1439,34 @@ Links:
 -  https://cursos.alura.com.br/course/kubernetes-deployments-volumes-escalabilidade/task/80509
 - https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler
 
+
+
+---
+
+---
+
+# Entendendo o HELM
+
+> Helm e um gerenciador de pacotes de cluster kunerntes, imagine que num deploys de apenas um item eu tenha os aquivos abaixo
+
+![image-20211128091344881](.images/image-20211128091344881.png)
+
+
+
+> Nesse caso teremos que dar 5 `kubectl apply -f` para fazer deploy da nossa aplicação, ou seja realizar o controle manual do processo. Para resolver isso é que o HELM foi criado.
+
+
+
+## Componetes
+
+
+
+### Chart
+
+> Pense em chart com um pacote de versão que contem todos os arquivos **.yaml** que compoem aquela versão.
+>
+> ex:
+>
+> ![image-20211128091657361](.images/image-20211128091657361.png)
+
+![image-20211128091727836](.images/image-20211128091727836.png)
