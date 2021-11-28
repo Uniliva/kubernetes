@@ -1205,3 +1205,235 @@ readinessProbe:
 EX:
 
 ![image-20211126061230975](.images/image-20211126061230975.png)
+
+
+
+
+
+----
+
+## Recurso de escalabilidade
+
+> Permite escalara os pods deacordo com a demanda
+>
+> - HPA - Horizontal pod autpscale
+
+
+
+### HPA - Horizontal Pod AutoScale
+
+- Basea-se no uso de cpu para realizar o scalonamento. por isso precisamos informar em nossos **deployments** os definições de cpus usadas por aquele pod.
+
+```yaml
+        resources:
+          limits:
+            memory: 128Mi
+            cpu: 500m
+          requests:
+            cpu: 10m # mili core cpu
+            memory: 128Mi
+```
+
+ex:
+
+![image-20211128085641444](.images/image-20211128085641444.png)
+
+
+
+- Criando um arquivo de configuração de HPA
+
+```yaml
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: primeiro-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: portal-noticias-deployment
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 20
+```
+
+### Comandos
+
+```yaml
+# listar configurações de HPA
+kubectl get hpa
+```
+
+
+
+> **Obs:** Apenas isso não sera necessario pra que funcione, é  necessario configurar um servidor de metricas vai garadar as metricas de consumo. para isso usamos o arquivo abaixo:
+>
+> ```yaml
+> ---
+> apiVersion: rbac.authorization.k8s.io/v1
+> kind: ClusterRole
+> metadata:
+>   name: system:aggregated-metrics-reader
+>   labels:
+>     rbac.authorization.k8s.io/aggregate-to-view: "true"
+>     rbac.authorization.k8s.io/aggregate-to-edit: "true"
+>     rbac.authorization.k8s.io/aggregate-to-admin: "true"
+> rules:
+> - apiGroups: ["metrics.k8s.io"]
+>   resources: ["pods", "nodes"]
+>   verbs: ["get", "list", "watch"]
+> ---
+> apiVersion: rbac.authorization.k8s.io/v1
+> kind: ClusterRoleBinding
+> metadata:
+>   name: metrics-server:system:auth-delegator
+> roleRef:
+>   apiGroup: rbac.authorization.k8s.io
+>   kind: ClusterRole
+>   name: system:auth-delegator
+> subjects:
+> - kind: ServiceAccount
+>   name: metrics-server
+>   namespace: kube-system
+> ---
+> apiVersion: rbac.authorization.k8s.io/v1
+> kind: RoleBinding
+> metadata:
+>   name: metrics-server-auth-reader
+>   namespace: kube-system
+> roleRef:
+>   apiGroup: rbac.authorization.k8s.io
+>   kind: Role
+>   name: extension-apiserver-authentication-reader
+> subjects:
+> - kind: ServiceAccount
+>   name: metrics-server
+>   namespace: kube-system
+> ---
+> apiVersion: apiregistration.k8s.io/v1beta1
+> kind: APIService
+> metadata:
+>   name: v1beta1.metrics.k8s.io
+> spec:
+>   service:
+>     name: metrics-server
+>     namespace: kube-system
+>   group: metrics.k8s.io
+>   version: v1beta1
+>   insecureSkipTLSVerify: true
+>   groupPriorityMinimum: 100
+>   versionPriority: 100
+> ---
+> apiVersion: v1
+> kind: ServiceAccount
+> metadata:
+>   name: metrics-server
+>   namespace: kube-system
+> ---
+> apiVersion: apps/v1
+> kind: Deployment
+> metadata:
+>   name: metrics-server
+>   namespace: kube-system
+>   labels:
+>     k8s-app: metrics-server
+> spec:
+>   selector:
+>     matchLabels:
+>       k8s-app: metrics-server
+>   template:
+>     metadata:
+>       name: metrics-server
+>       labels:
+>         k8s-app: metrics-server
+>     spec:
+>       serviceAccountName: metrics-server
+>       volumes:
+>       # mount in tmp so we can safely use from-scratch images and/or read-only containers
+>       - name: tmp-dir
+>         emptyDir: {}
+>       containers:
+>       - name: metrics-server
+>         image: k8s.gcr.io/metrics-server/metrics-server:v0.3.7
+>         imagePullPolicy: IfNotPresent
+>         args:
+>           - --cert-dir=/tmp
+>           - --secure-port=4443
+>         ports:
+>         - name: main-port
+>           containerPort: 4443
+>           protocol: TCP
+>         securityContext:
+>           readOnlyRootFilesystem: true
+>           runAsNonRoot: true
+>           runAsUser: 1000
+>         volumeMounts:
+>         - name: tmp-dir
+>           mountPath: /tmp
+>       nodeSelector:
+>         kubernetes.io/os: linux
+> ---
+> apiVersion: v1
+> kind: Service
+> metadata:
+>   name: metrics-server
+>   namespace: kube-system
+>   labels:
+>     kubernetes.io/name: "Metrics-server"
+>     kubernetes.io/cluster-service: "true"
+> spec:
+>   selector:
+>     k8s-app: metrics-server
+>   ports:
+>   - port: 443
+>     protocol: TCP
+>     targetPort: main-port
+> ---
+> apiVersion: rbac.authorization.k8s.io/v1
+> kind: ClusterRole
+> metadata:
+>   name: system:metrics-server
+> rules:
+> - apiGroups:
+>   - ""
+>   resources:
+>   - pods
+>   - nodes
+>   - nodes/stats
+>   - namespaces
+>   - configmaps
+>   verbs:
+>   - get
+>   - list
+>   - watch
+> ---
+> apiVersion: rbac.authorization.k8s.io/v1
+> kind: ClusterRoleBinding
+> metadata:
+>   name: system:metrics-server
+> roleRef:
+>   apiGroup: rbac.authorization.k8s.io
+>   kind: ClusterRole
+>   name: system:metrics-server
+> subjects:
+> - kind: ServiceAccount
+>   name: metrics-server
+>   namespace: kube-system
+> 
+> ```
+>
+> 
+
+
+
+Links:
+
+-  https://cursos.alura.com.br/course/kubernetes-deployments-volumes-escalabilidade/task/80509
+- https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler
+
